@@ -120,8 +120,6 @@ def run_one_batch(net, batch, cfgs, l_type,forward_pass_type="default", nof1=Fal
             outputs_L, outputs_S, outputs_M = net.forward_branch3(D)
         elif forward_pass_type == "serial":
             outputs_L, outputs_S, outputs_M = net.forward_serial(D)
-        elif forward_pass_type == "serialx":
-            outputs_L, outputs_S, outputs_M = net.forward_serialx(D)
         elif forward_pass_type == "Ensemble":
             outputs_L, outputs_S, outputs_M = net.forward_ensemble(D)
         elif forward_pass_type == "MaduX":
@@ -136,12 +134,10 @@ def run_one_batch(net, batch, cfgs, l_type,forward_pass_type="default", nof1=Fal
                 outputs_L, outputs_S, outputs_M = net.forward_branch2(D)
             elif forward_pass_type == "branch3":
                 outputs_L, outputs_S, outputs_M = net.forward_branch3(D)
-            elif forward_pass_type == "Series_branch":
-                outputs_L, outputs_S, outputs_M = net.forward_sequential(D)
+            elif forward_pass_type == "serial":
+                outputs_L, outputs_S, outputs_M = net.forward_serial(D)
             elif forward_pass_type == "Ensemble":
                 outputs_L, outputs_S, outputs_M = net.forward_ensemble(D)
-            elif forward_pass_type == "serialx":
-                outputs_L, outputs_S, outputs_M = net.forward_serialx(D)
             else:
                 outputs_L, outputs_S, outputs_M = net(D)
         print(prof.key_averages().table(sort_by='cuda_time_total'))
@@ -244,17 +240,6 @@ def main_training_function(net, log_dir, data_loader, cfgs, log_file, checkpoint
         print(f"\n\nStep 1: Training loop for {mode} only layers")
         train_submodel(net, data_loader, cfgs, log_file, epochs, mode, forward_pass_type="serial")
         forward_type = 'serial'
-    if mode in ['serialx']:
-        print(f"\n\nStep 1: Training loop for {mode} only layers")
-        train_submodel(net, data_loader, cfgs, log_file, epochs, mode, forward_pass_type="serialx")
-        forward_type = 'serialx'
-        f1_test = eval(net, data_loader, cfgs, log_dir, log_file, checkpoint_file, cfgs.loss_type,forward_pass_type= "serialx")
-        F1thresholds = [0.5] 
-        F1_train = f1_test[0] 
-        F1_eval = f1_test[1][-1] 
-        all_losses = f1_test[-3] 
-        model_time = f1_test[-2]
-        file_write = cfgs.file_write
     if mode in ['Ensemble1', 'Ensemble2', 'Ensemble3']:
         model_name1 = get_submodel_names(mode)[0]
         print("\n\nStep 1: Training loop for {} only layers".format(model_name1))

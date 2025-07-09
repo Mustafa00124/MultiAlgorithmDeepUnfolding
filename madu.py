@@ -57,16 +57,6 @@ class Madu(nn.Module):
             self.branch2 = self.make_Madu_layers()
             self.branch3 = self.make_Madu_layers()
 
-            # Low rank weights
-            self.u_M_branch1 = nn.Parameter(torch.ones(self.h, 1))
-            self.v_M_branch1 = nn.Parameter(torch.ones(128, 1) / 3.0)
-
-            self.u_M_branch2 = nn.Parameter(torch.ones(self.h, 1))
-            self.v_M_branch2 = nn.Parameter(torch.ones(128, 1) / 3.0)
-
-            self.u_M_branch3 = nn.Parameter(torch.ones(self.h, 1))
-            self.v_M_branch3 = nn.Parameter(torch.ones(128, 1) / 3.0)
-
             self.w_branch1 = nn.Parameter(torch.randn(1, 1))
             self.w_branch2 = nn.Parameter(torch.randn(1, 1))
             self.w_branch3 = nn.Parameter(torch.randn(1, 1))
@@ -89,8 +79,7 @@ class Madu(nn.Module):
             'Ensemble3': ('mean', 'median', 'dft'),
             'Series1': ('mean', 'dft', 'svd'),
             'Series2': ('median', 'dft', 'svd'),
-            'Series3': ('median', 'mean', 'dft'),
-            'serialx': ('median', 'dft', 'svd')
+            'Series3': ('median', 'mean', 'dft')
         }
         self.forward_mode1, self.forward_mode2, self.forward_mode3 = mode_map.get(params['mode'], ('default', 'default', 'default'))
 
@@ -151,18 +140,6 @@ class Madu(nn.Module):
     def forward_serial(self, x):
         D = x
         B, T, H, W = x.shape
-        L = torch.median(D, dim=1, keepdim=True).values.repeat(1, D.shape[1], 1, 1).cuda()
-        M = torch.where(torch.abs(x - L) > 0.05, torch.ones_like(x), torch.zeros_like(x))
-        forward_modes = [self.forward_mode1, self.forward_mode2, self.forward_mode3]
-        for i, layer in enumerate(self.branch1):
-            (D, L, M), foreground = layer((D, L, M), forward_modes[i])
-            if not self.training:
-                self.foregrounds1.append(foreground)
-        return L, None, M
-    
-    def forward_serialx(self, x):
-        D = x
-        B, T, H, W = x.shape
         L = torch.median(D, dim=1, keepdim=True).values.repeat(1, T, 1, 1).cuda()
         M = torch.where(torch.abs(x - L) > 0.05, torch.ones_like(x), torch.zeros_like(x))
 
@@ -193,24 +170,6 @@ class Madu(nn.Module):
         L_branch3, _, M_branch3 = self.forward_branch3(x)
 
         M_weighted = self.w_branch1.unsqueeze(0).unsqueeze(0) * M_branch1 + self.w_branch2.unsqueeze(0).unsqueeze(0) * M_branch2 + self.w_branch3.unsqueeze(0).unsqueeze(0) * M_branch3
-        M_weighted = M_weighted.clamp(min=0, max=1)
-        return L_branch1, None, M_weighted
-
-    def forward_ensemble2(self, x):
-        L_branch1, _, M_branch1 = self.forward_branch1(x)
-        L_branch2, _, M_branch2 = self.forward_branch2(x)
-        L_branch3, _, M_branch3 = self.forward_branch3(x)
-
-        weight_matrix_M_branch1 = torch.matmul(self.u_M_branch1, self.v_M_branch1.T)
-        weight_matrix_M_branch2 = torch.matmul(self.u_M_branch2, self.v_M_branch2.T)
-        weight_matrix_M_branch3 = torch.matmul(self.u_M_branch3, self.v_M_branch3.T)
-
-
-        # Apply depthwise softmax to normalize the weight matrices
-        softmaxed_weights_M = self.depthwise_softmax(weight_matrix_M_branch1, weight_matrix_M_branch2, weight_matrix_M_branch3)
-
-        # Use the softmaxed weight matrices to weight the L outputs
-        M_weighted = softmaxed_weights_M[0].unsqueeze(0).unsqueeze(0) * M_branch1 + softmaxed_weights_M[1].unsqueeze(0).unsqueeze(0) * M_branch2 + softmaxed_weights_M[2].unsqueeze(0).unsqueeze(0) * M_branch3
         M_weighted = M_weighted.clamp(min=0, max=1)
         return L_branch1, None, M_weighted
     
