@@ -78,11 +78,11 @@ Each mode corresponds to a unique algorithmic configuration:
 
 | Mode        | Description                                | Priors Used                   |
 | ----------- | ------------------------------------------ | ----------------------------- |
-| `Madu2`     | **Main setting used in the paper**         | Median + DFT + SVT (low-rank) |
+| `Madu2`     | **Main setting used in the paper**         | Median + DFT + SVT            |
 | `median`    | Ablation using only median filtering       | Median                        |
 | `dft`       | Ablation using only frequency thresholding | DFT                           |
 | `svd`       | Ablation using only low-rank prior         | SVT                           |
-| `Serial2`   | Sequentially applies priors                | Median → DFT → SVT            |
+| `Serial2`   | Sequentially applies priors                | Median + DFT + SVT            |
 | `Ensemble2` | Output-level ensemble of the three priors  | Median + DFT + SVT            |
 
 > In our paper, we used `Madu2` with `3` unfolding layers and a seed of `5` as the main evaluation setup.
@@ -103,12 +103,7 @@ This will scan the logs and output a summary table ready for your paper.
 
 ## Results Summary
 
-MADU2 outperforms all baselines and ablation configurations on CDnet2014. It performs especially well in complex categories such as:
-
-* Dynamic Background
-* Bad Weather
-* Turbulence
-* Shadows
+MADU2 outperforms all baselines and ablation configurations on CDnet2014.
 
 The structured, interpretable nature of MADU ensures robustness across variations without resorting to black-box designs.
 
@@ -116,7 +111,7 @@ The structured, interpretable nature of MADU ensures robustness across variation
 
 ## Citation
 
-If you use this code in your research, please cite:
+Please cite:
 
 ```bibtex
 @inproceedings{Siddiqui2025MADU,
